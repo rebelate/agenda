@@ -4,19 +4,22 @@ mod view;
 use crossterm::style::Color;
 use reqwest::{header, Url};
 use serde_json::{Map, Value};
-use std::{collections::HashMap, process::exit, time::Instant};
+use std::{collections::HashMap, env, path::Path, process::exit, time::Instant};
 use task::Task;
 use yup_oauth2::{AccessToken, InstalledFlowAuthenticator, InstalledFlowReturnMethod};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let app_secret = yup_oauth2::read_application_secret("config.json")
+    let exe_path = env::current_exe().unwrap();
+    let config_path = Path::new(&exe_path).with_file_name("config.json");
+    let token_path = Path::new(&exe_path).with_file_name("token.json");
+    let app_secret = yup_oauth2::read_application_secret(config_path)
         .await
         .expect("config");
 
     let auth =
         InstalledFlowAuthenticator::builder(app_secret, InstalledFlowReturnMethod::HTTPRedirect)
-            .persist_tokens_to_disk("tokencache.json")
+            .persist_tokens_to_disk(token_path)
             .build()
             .await?;
     let scopes = &["https://www.googleapis.com/auth/tasks"];
